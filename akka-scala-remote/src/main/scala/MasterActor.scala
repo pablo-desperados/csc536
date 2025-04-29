@@ -3,7 +3,7 @@ package mapreduce
 import akka.actor.{Actor, ActorRef,Props}
 import akka.remote.routing.{RemoteRouterConfig}
 import scala.collection.mutable.{HashMap}
-import akka.routing.{RoundRobinRoutingLogic, Pool, ConsistentHashingPool, ActorRefRoutee, ConsistentHashingGroup, Broadcast}
+import akka.routing.{GetRoutees, RoundRobinRoutingLogic, Pool, ConsistentHashingPool, ActorRefRoutee, ConsistentHashingGroup, Broadcast}
 import com.typesafe.config.ConfigFactory
 import mapreduce._
 import akka.routing.Router
@@ -22,13 +22,32 @@ class MasterActor extends Actor{
 
 
     def receive = {
+        case REGISTER_MAPPER(mapperRef)=>
+            println(s"Remote mapper registered: ${mapperRef.path}")
+            mapRouter = mapRouter.addRoutee(mapperRef)
+            totalMappers+=1
+        
+        case REGISTER_REDUCER(mapperRef) => 
+            println(s"Remote reducer registered: ${mapperRef.path}")
+            listofReducers :+= mapperRef
+            totalReducers += 1
+            this.reduceRouter = context.actorOf(
+                ConsistentHashingGroup(
+                    paths = listofReducers.map(_.path.toStringWithoutAddress),
+                    hashMapping = hashingFunc
+                ).props(),
+                name = s"reducerRouter-${System.nanoTime}"
+            )
+
+
+
         case SETUP=>
             println("*********** Starting MapReduce Process ***********")
 
-            val localReduce1 = context.actorOf(Props(classOf[ReduceActor]), name = "RemoteReduce" + 1)
-            val localReduce2 = context.actorOf(Props(classOf[ReduceActor]), name = "RemoteReduce" + 2)
+            val localReduce1 = context.actorOf(Props(classOf[ReduceActor]), name = s"LocalReduce-${System.nanoTime}")
+            val localReduce2 = context.actorOf(Props(classOf[ReduceActor]), name = s"LocalReduce-${System.nanoTime}")
             totalReducers+=2
-            val listofReducers = Vector(
+            this.listofReducers = Vector(
                 localReduce1,
                 localReduce2
             )
@@ -38,15 +57,15 @@ class MasterActor extends Actor{
                     paths=listofReducers.map(e=> e.path.toStringWithoutAddress),
                     hashMapping= hashingFunc
                 ).props(),
-                name = "reducerRouter"
+                name = s"reducerRouter-${System.nanoTime}"
             )
 
             println("*********** Reducers Setup Finished ***********")
 
             
-            val localMap1 = context.actorOf(Props(classOf[MapActor], "Map1", reduceRouter), name = "Map1")
-            val localMap2 = context.actorOf(Props(classOf[MapActor], "Map2", reduceRouter), name = "Map2")
-           
+            val localMap1 = context.actorOf(Props(classOf[MapActor], "Map1", reduceRouter), name =  s"LocalMap-${System.nanoTime}")
+            val localMap2 = context.actorOf(Props(classOf[MapActor], "Map2", reduceRouter), name =  s"LocalMap-${System.nanoTime}")
+            totalMappers+=1
 
 
             val listofMappers = Vector(
@@ -60,18 +79,22 @@ class MasterActor extends Actor{
         
         case INITMAP(title, url) => 
             this.mapRouter.route(INITMAPPER(title, url), sender())
-             totalMappers+=1
+        
+        case INIT_REDUCER(name, title) => 
+            this.reduceRouter ! INIT_REDUCER(name, title)
 
         case MapperDone =>
             mappersDone += 1
+            Thread.sleep(10000)
             if (mappersDone == totalMappers) {
-                println("✅ All mappers are done! Tell reducers to FLUSH!")
-                this.reduceRouter ! Broadcast(FLUSH)
+                println("All mappers are done! Tell reducers to FLUSH!")
+                this.listofReducers.foreach(e => e ! FLUSH)
             }
         case DONE => 
             reducersDone += 1
+            println(s"reducersDone<${reducersDone}>-totalReducer${totalReducers}")
             if (reducersDone == totalReducers) {
-                println("✅ All reducers have finished writing results! Job done!")
+                println("All reducers have finished writing results! Job done!")
                 context.system.terminate()
             }
                 

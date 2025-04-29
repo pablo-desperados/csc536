@@ -12,7 +12,10 @@ object ClientMain extends App {
     println("Client Ready")
 
     master ! SETUP
-    for(i <- 1 to 1){
+
+     Thread.sleep(6000)
+
+    for(i <- 1 to 7){
         var source = ConfigFactory.load().getString("source-"+i)
         var split_source = source.split("\\|",2)
         var title = split_source(0)

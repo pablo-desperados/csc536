@@ -13,7 +13,7 @@ class MapActor(name: String, reducerRouter: ActorRef) extends Actor{
              val content = read_file(url)
              val list_of_names = extract_names(title,content, STOP_WORDS_LIST)
              list_of_names.foreach { case (name, title) =>
-                router ! INIT_REDUCER(name, title)
+                context.parent ! INIT_REDUCER(name, title)
             }
             context.parent ! MapperDone
         

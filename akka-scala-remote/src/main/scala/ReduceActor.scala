@@ -7,10 +7,7 @@ import java.io.{File, PrintWriter}
 
 
 class ReduceActor extends Actor{
-    val nameActor =self.path.name
     val title_words = new HashMap[String, ListBuffer[String]]()
-
-    println(s"Start ${this.nameActor}")
 
     def receive: Actor.Receive = {
 
@@ -21,14 +18,14 @@ class ReduceActor extends Actor{
                 }
             
         case FLUSH =>
-            println(s"<<<<<< Results from ${nameActor} being written... >>>>>>")
+            println(s"<<<<<< Results from ${self.path.name} being written... >>>>>>")
             saveToFile()
             
     }
 
 
     def saveToFile() : Unit ={
-        val outputFile = new File(s"${nameActor}_results.txt")
+        val outputFile = new File(s"${self.path.name}_results.txt")
         val writer = new PrintWriter(outputFile)
         for ((name, titles) <- title_words.toSeq.sortBy(_._1)) {
             val formatted = s"<Name>: $name - <Title_Count>: ${titles.size} - <Titles>: [${titles.mkString(", ")}]"
