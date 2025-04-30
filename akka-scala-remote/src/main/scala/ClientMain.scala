@@ -13,7 +13,7 @@ object ClientMain extends App {
 
     master ! SETUP
 
-     Thread.sleep(106000)
+     Thread.sleep(3000)
 
     for(i <- 1 to sources.toInt){
         var source = ConfigFactory.load().getString("source-"+i)
