@@ -10,7 +10,7 @@ object  RemoteClientMain extends App{
 
     val config = ConfigFactory.load("remote.conf")
     val system = ActorSystem("RemoteMapReduce", config)
-    val masterPath = "akka://MapReduceAppClient@192.168.1.140:9090/user/master"
+    val masterPath = "akka://MapReduceAppClient@79.117.198.251:9090/user/master"
 
 
     def tryRegister(): Unit = {
