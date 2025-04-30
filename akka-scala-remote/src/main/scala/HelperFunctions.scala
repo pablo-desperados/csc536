@@ -1,4 +1,5 @@
 package mapreduce
+
 import scala.io.Source
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import scala.collection.mutable.{HashMap, Seq}

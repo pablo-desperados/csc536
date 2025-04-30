@@ -19,7 +19,7 @@ object  RemoteClientMain extends App{
         case Success(masterRef) =>
             println("successfully connected to master.")
             for (i <- 1 to 2) {
-            val mapper = system.actorOf(Props(classOf[MapActor], s"RemoteMap$i", masterRef), name =  s"RemoteReduce-${System.nanoTime}")
+            val mapper = system.actorOf(Props(classOf[MapActor], s"RemoteMap$i"), name =  s"RemoteReduce-${System.nanoTime}")
             masterRef ! REGISTER_MAPPER(mapper)
             }
 

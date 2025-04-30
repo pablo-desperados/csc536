@@ -2,9 +2,8 @@ package mapreduce
 
 import akka.actor.{Actor, ActorRef}
 
-class MapActor(name: String, reducerRouter: ActorRef) extends Actor{
+class MapActor(name: String) extends Actor{
     val nameActor = name
-    val router = reducerRouter
     val STOP_WORDS_LIST = List("a", "am", "an", "and", "are", "as", "at", "be",
     "do", "go", "if", "in", "is", "it", "of", "on", "the", "to")
 
