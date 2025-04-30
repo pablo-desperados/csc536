@@ -13,7 +13,7 @@ import akka.routing.RoutingLogic
 
 class MasterActor extends Actor{
 
-
+    val sources: String= ConfigFactory.load().getString("number-sources")
     var mapRouter: Router = Router(RoundRobinRoutingLogic(),Vector())
     var reduceRouter: Router = Router(ConsistentHashingRoutingLogic(context.system,hashMapping = hashingFunc), Vector())
     var listofMappers: Vector[ActorRef] = Vector()
@@ -21,6 +21,8 @@ class MasterActor extends Actor{
     var mappersDone = 0
     var totalMappers= 0
     var reducersDone = 0
+    var totalFilesToProcess = sources.toInt
+    var filesProcessed = 0
     var totalReducers = reducersDone
 
     def receive = {
@@ -75,11 +77,10 @@ class MasterActor extends Actor{
             this.reduceRouter.route( INIT_REDUCER(name, title), sender())
 
         case MapperDone =>
-            mappersDone += 1
-            Thread.sleep(10000)
-            if (mappersDone == totalMappers) {
-                println("All mappers are done! Tell reducers to FLUSH!")
-                this.listofReducers.foreach(e => e ! FLUSH)
+            filesProcessed += 1
+            if (filesProcessed == totalFilesToProcess) {
+                println("All files processed! Telling reducers to FLUSH.")
+                listofReducers.foreach(_ ! FLUSH)
             }
         case DONE => 
             reducersDone += 1
